@@ -1,8 +1,8 @@
 import React from 'react';
-
+import { Link } from 'react-router-dom';
 const Login = () => {
   return (
-    <div className="flex items-center justify-center h-[calc(100vh-80px)] bg-black px-4">
+    <div className="flex items-center justify-center min-h-screen bg-black px-4">
       <div className="w-full max-w-md md:max-w-sm p-6 md:p-8 bg-stone-950 rounded-lg transition-transform transform hover:scale-105 duration-300 ease-in-out">
         <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-4 md:mb-6">Login</h2>
 
@@ -85,9 +85,9 @@ const Login = () => {
 
         <p className="text-center text-xs md:text-sm text-gray-400 mt-4 md:mt-6">
           Don't have an account?{' '}
-          <a href="#" className="text-indigo-500 hover:underline">
+          <Link to="/signup" className="text-indigo-500 hover:underline">
             Sign up
-          </a>
+          </Link>
         </p>
       </div>
     </div>
