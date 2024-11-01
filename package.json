@@ -1,0 +1,25 @@
+{
+  "name": "serverlesspersonalfinancemanager",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000S\u0000e\u0000r\u0000v\u0000e\u0000r\u0000l\u0000e\u0000s\u0000s\u0000 \u0000P\u0000e\u0000r\u0000s\u0000o\u0000n\u0000a\u0000l\u0000 \u0000F\u0000i\u0000n\u0000a\u0000n\u0000c\u0000e\u0000 \u0000M\u0000a\u0000n\u0000a\u0000g\u0000e\u0000r\u0000\\\u0000n\u0000\\\u0000n\u0000A\u0000 \u0000s\u0000e\u0000r\u0000v\u0000e\u0000r\u0000l\u0000e\u0000s\u0000s\u0000 \u0000p\u0000e\u0000r\u0000s\u0000o\u0000n\u0000a\u0000l\u0000 \u0000f\u0000i\u0000n\u0000a\u0000n\u0000c\u0000e\u0000 \u0000m\u0000a\u0000n\u0000a\u0000g\u0000e\u0000r\u0000 \u0000a\u0000p\u0000p\u0000 \u0000l\u0000e\u0000v\u0000e\u0000r\u0000a\u0000g\u0000i\u0000n\u0000g\u0000 \u0000A\u0000W\u0000S\u0000 \u0000s\u0000e\u0000r\u0000v\u0000i\u0000c\u0000e\u0000s\u0000.\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@aws-amplify/backend": "^1.6.0",
+    "@aws-amplify/backend-cli": "^1.4.0",
+    "aws-cdk": "^2.165.0",
+    "aws-cdk-lib": "^2.165.0",
+    "constructs": "^10.4.2",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "aws-amplify": "^6.8.0"
+  }
+}
