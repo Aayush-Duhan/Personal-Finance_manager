@@ -30,8 +30,8 @@ const Sidebar = () => {
             to="/"
             exact="true"
             className={({ isActive }) =>
-              `flex items-center hover:bg-slate-800 p-2 rounded-full md:rounded-lg transition-all duration-300 ${
-                isActive ? 'bg-slate-900 text-white' : 'text-gray-400'
+              `flex items-center p-2 rounded-full md:rounded-lg transition-all duration-300 ${
+                isActive ? 'bg-indigo-900 text-white scale-105 shadow-lg' : 'text-gray-400 hover:bg-slate-800'
               }`
             }
           >
@@ -43,8 +43,8 @@ const Sidebar = () => {
             to="/expenses"
             exact="true"
             className={({ isActive }) =>
-              `flex items-center hover:bg-slate-800 p-2 rounded-full md:rounded-lg transition-all duration-300 ${
-                isActive ? 'bg-slate-900 text-white' : 'text-gray-400'
+              `flex items-center p-2 rounded-full md:rounded-lg transition-all duration-300 ${
+                isActive ? 'bg-indigo-900 text-white scale-105 shadow-lg' : 'text-gray-400 hover:bg-slate-800'
               }`
             }
           >
@@ -56,8 +56,8 @@ const Sidebar = () => {
             to="/budgeting"
             exact="true"
             className={({ isActive }) =>
-              `flex items-center hover:bg-slate-800 p-2 rounded-full md:rounded-lg transition-all duration-300 ${
-                isActive ? 'bg-slate-900 text-white' : 'text-gray-400'
+              `flex items-center p-2 rounded-full md:rounded-lg transition-all duration-300 ${
+                isActive ? 'bg-indigo-900 text-white scale-105 shadow-lg' : 'text-gray-400 hover:bg-slate-800'
               }`
             }
           >
@@ -69,8 +69,8 @@ const Sidebar = () => {
             to="/reports"
             exact="true"
             className={({ isActive }) =>
-              `flex items-center hover:bg-slate-800 p-2 rounded-full md:rounded-lg transition-all duration-300 ${
-                isActive ? 'bg-slate-900 text-white' : 'text-gray-400'
+              `flex items-center p-2 rounded-full md:rounded-lg transition-all duration-300 ${
+                isActive ? 'bg-indigo-900 text-white scale-105 shadow-lg' : 'text-gray-400 hover:bg-slate-800'
               }`
             }
           >
@@ -82,8 +82,8 @@ const Sidebar = () => {
             to="/profile"
             exact="true"
             className={({ isActive }) =>
-              `flex items-center hover:bg-slate-800 p-2 rounded-full md:rounded-lg transition-all duration-300 ${
-                isActive ? 'bg-slate-900 text-white' : 'text-gray-400'
+              `flex items-center p-2 rounded-full md:rounded-lg transition-all duration-300 ${
+                isActive ? 'bg-indigo-900 text-white scale-105 shadow-lg' : 'text-gray-400 hover:bg-slate-800'
               }`
             }
           >
