@@ -6,6 +6,7 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
+import Profile from './pages/Profile';
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
@@ -107,6 +108,12 @@ function App() {
               path="/reports"
               element={
                 isAuthenticated ? <Reports /> : <Navigate to="/login" replace />
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                isAuthenticated ? <Profile /> : <Navigate to="/login" replace />
               }
             />
           </Routes>
