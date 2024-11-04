@@ -40,7 +40,7 @@ const Sidebar = () => {
           </NavLink>
 
           <NavLink
-            to="/expenses"
+            to="/transactions"
             exact="true"
             className={({ isActive }) =>
               `flex items-center p-2 rounded-full md:rounded-lg transition-all duration-300 ${
@@ -49,7 +49,7 @@ const Sidebar = () => {
             }
           >
             <CurrencyDollarIcon className="w-6 h-6" />
-            <span className="ml-3 hidden md:group-hover:inline-block">Expenses</span>
+            <span className="ml-3 hidden md:group-hover:inline-block">Transactions</span>
           </NavLink>
 
           <NavLink

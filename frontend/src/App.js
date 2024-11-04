@@ -89,7 +89,7 @@ function App() {
               }
             />
             <Route
-              path="/expenses"
+              path="/transactions"
               element={
                 isAuthenticated ? (
                   <Expenses />
