@@ -17,9 +17,9 @@ import Login from "./pages/auth/login";
 import Signup from "./pages/auth/signup";
 import { fetchAuthSession } from "@aws-amplify/auth";
 import { Amplify } from "aws-amplify";
-import amplifyConfig from "./aws-exports";
+import awsmobile from "./aws-exports";
 
-Amplify.configure(amplifyConfig);
+Amplify.configure(awsmobile);
 
 function App() {
   const location = useLocation();

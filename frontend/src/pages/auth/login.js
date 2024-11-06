@@ -1,11 +1,18 @@
-import React, { useState, useEffect  } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signIn, getCurrentUser } from '@aws-amplify/auth';
+import { signIn, getCurrentUser, signInWithRedirect } from '@aws-amplify/auth';
+import { Hub } from '@aws-amplify/core';
+import { Amplify } from 'aws-amplify';
+import awsmobile from '../../aws-exports';
+
+// Configure Amplify exactly matching the interface structure
+Amplify.configure(awsmobile);
 
 const Login = ({ setIsAuthenticated }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   useEffect(() => {
     // Check if a user is already signed in
@@ -13,28 +20,49 @@ const Login = ({ setIsAuthenticated }) => {
       try {
         const currentUser = await getCurrentUser();
         if (currentUser) {
-          navigate('/'); // Redirect to the main page if already signed in
+          setIsAuthenticated(true);
+          navigate('/');
         }
       } catch (error) {
         // No signed-in user found; proceed to show login form
       }
     };
 
+    // Set up Hub listener for OAuth flow
+    const unsubscribe = Hub.listen("auth", ({ payload }) => {
+      switch (payload.event) {
+        case "signInWithRedirect":
+          checkUser();
+          break;
+        case "signInWithRedirect_failure":
+          setError("An error occurred during the Google sign-in process.");
+          break;
+        default:
+          break;
+      }
+    });
+
     checkUser();
-  }, [navigate]);
+
+    // Cleanup listener on component unmount
+    return unsubscribe;
+  }, [navigate, setIsAuthenticated]);
 
   const handleLogin = async (event) => {
     event.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    
     try {
       await signIn({
         username: email,
         password,
         attributes: {
-          email, // Required attribute for verification via email
+          email,
         },
       });
-      localStorage.setItem('isLoggedIn', 'true'); // Set local storage on successful login
-      setIsAuthenticated(true); // Update the state
+      localStorage.setItem('isLoggedIn', 'true');
+      setIsAuthenticated(true);
       navigate('/');
     } catch (error) {
       console.error('Error logging in:', error);
@@ -51,6 +79,19 @@ const Login = ({ setIsAuthenticated }) => {
         default:
           setError('Failed to log in. Please try again.');
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithRedirect({
+        provider: 'Google'
+      });
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      setError('Failed to sign in with Google. Please try again.');
     }
   };
 
@@ -103,8 +144,9 @@ const Login = ({ setIsAuthenticated }) => {
           <button
             type="submit"
             className="w-full p-2 md:p-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg"
+            disabled={isLoading}
           >
-            Sign in
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
         {/* Social Login Section */}
@@ -116,6 +158,7 @@ const Login = ({ setIsAuthenticated }) => {
 
         <div className="flex justify-center mt-4 space-x-3 md:space-x-4">
           <button
+            onClick={handleGoogleSignIn}
             aria-label="Log in with Google"
             className="p-2 md:p-3 rounded-lg bg-gray-700 text-white hover:bg-gray-600"
           >

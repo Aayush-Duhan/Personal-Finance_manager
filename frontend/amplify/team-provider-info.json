@@ -1,0 +1,32 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-financemanager-dev-7931d-authRole",
+      "UnauthRoleArn": "arn:aws:iam::585768188472:role/amplify-financemanager-dev-7931d-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::585768188472:role/amplify-financemanager-dev-7931d-authRole",
+      "Region": "ap-south-1",
+      "DeploymentBucketName": "amplify-financemanager-dev-7931d-deployment",
+      "UnauthRoleName": "amplify-financemanager-dev-7931d-unauthRole",
+      "StackName": "amplify-financemanager-dev-7931d",
+      "StackId": "arn:aws:cloudformation:ap-south-1:585768188472:stack/amplify-financemanager-dev-7931d/63c11ab0-9c6e-11ef-bc78-02ce8cacc8cf",
+      "AmplifyAppId": "drz6ep0olv71c",
+      "AuthTriggerTemplateURL": "https://s3.amazonaws.com/amplify-financemanager-dev-7931d-deployment/amplify-cfn-templates/auth/auth-trigger-cloudformation-template.json"
+    },
+    "categories": {
+      "auth": {
+        "financemanagerauth": {
+          "googleClientId": "551714721936-ehjm8jjh13n3mokse35ugr2ajg6lum5t.apps.googleusercontent.com"
+        }
+      },
+      "function": {
+        "financemanagerauthCustomMessage": {
+          "REDIRECTURL": "http://localhost:3000/",
+          "EMAILSUBJECT": "Confirm your Finance Manager Account",
+          "EMAILMESSAGE": "Hello,  Thank you for signing up with Finance Manager. Your verification code is: {####}  Please enter this code to verify your email address and complete your registration.  This code will expire in 24 hours.  If you didn't create an account with Finance Manager, please ignore this email.  Best regards,  Finance Manager Team",
+          "deploymentBucketName": "amplify-financemanager-dev-7931d-deployment",
+          "s3Key": "amplify-builds/financemanagerauthCustomMessage-41756c58636748386277-build.zip"
+        }
+      }
+    }
+  }
+}

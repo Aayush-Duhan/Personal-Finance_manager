@@ -1,0 +1,99 @@
+{
+  "auth": {
+    "financemanagerauth": {
+      "customAuth": false,
+      "dependsOn": [
+        {
+          "attributes": [
+            "Arn",
+            "Name"
+          ],
+          "category": "function",
+          "resourceName": "financemanagerauthCustomMessage",
+          "triggerProvider": "Cognito"
+        }
+      ],
+      "frontendAuthConfig": {
+        "mfaConfiguration": "OFF",
+        "mfaTypes": [
+          "SMS"
+        ],
+        "passwordProtectionSettings": {
+          "passwordPolicyCharacters": [],
+          "passwordPolicyMinLength": 8
+        },
+        "signupAttributes": [
+          "EMAIL"
+        ],
+        "socialProviders": [
+          "GOOGLE"
+        ],
+        "usernameAttributes": [
+          "EMAIL"
+        ],
+        "verificationMechanisms": [
+          "EMAIL"
+        ]
+      },
+      "providerPlugin": "awscloudformation",
+      "service": "Cognito"
+    }
+  },
+  "function": {
+    "financemanagerauthCustomMessage": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_auth_financemanagerauth_googleClientId": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "financemanagerauth"
+        }
+      ]
+    },
+    "AMPLIFY_function_financemanagerauthCustomMessage_EMAILMESSAGE": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "financemanagerauthCustomMessage"
+        }
+      ]
+    },
+    "AMPLIFY_function_financemanagerauthCustomMessage_EMAILSUBJECT": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "financemanagerauthCustomMessage"
+        }
+      ]
+    },
+    "AMPLIFY_function_financemanagerauthCustomMessage_REDIRECTURL": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "financemanagerauthCustomMessage"
+        }
+      ]
+    },
+    "AMPLIFY_function_financemanagerauthCustomMessage_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "financemanagerauthCustomMessage"
+        }
+      ]
+    },
+    "AMPLIFY_function_financemanagerauthCustomMessage_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "financemanagerauthCustomMessage"
+        }
+      ]
+    }
+  }
+}
