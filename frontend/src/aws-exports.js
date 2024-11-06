@@ -13,7 +13,7 @@ const awsmobile = {
             "profile",
             "aws.cognito.signin.user.admin"
         ],
-        "redirectSignIn": "http://localhost:3000/,https://main.d3lqh73emmjp9j.amplifyapp.com/",
+        "redirectSignIn": "http://localhost:3000/,https://main.d3lqh73emmjp9j.amplifyapp.com/,https://financemanager76a892e1-76a892e1-dev.auth.ap-south-1.amazoncognito.com/oauth2/idpresponse",
         "redirectSignOut": "http://localhost:3000/,https://main.d3lqh73emmjp9j.amplifyapp.com/",
         "responseType": "code"
     },
