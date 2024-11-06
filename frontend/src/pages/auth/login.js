@@ -5,7 +5,6 @@ import { Hub } from '@aws-amplify/core';
 import { Amplify } from 'aws-amplify';
 import awsmobile from '../../aws-exports';
 
-// Configure Amplify exactly matching the interface structure
 Amplify.configure(awsmobile);
 
 const Login = ({ setIsAuthenticated }) => {
@@ -14,8 +13,8 @@ const Login = ({ setIsAuthenticated }) => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
   useEffect(() => {
-    // Check if a user is already signed in
     const checkUser = async () => {
       try {
         const currentUser = await getCurrentUser();
@@ -23,12 +22,9 @@ const Login = ({ setIsAuthenticated }) => {
           setIsAuthenticated(true);
           navigate('/');
         }
-      } catch (error) {
-        // No signed-in user found; proceed to show login form
-      }
+      } catch (error) {}
     };
 
-    // Set up Hub listener for OAuth flow
     const unsubscribe = Hub.listen("auth", ({ payload }) => {
       switch (payload.event) {
         case "signInWithRedirect":
@@ -43,8 +39,6 @@ const Login = ({ setIsAuthenticated }) => {
     });
 
     checkUser();
-
-    // Cleanup listener on component unmount
     return unsubscribe;
   }, [navigate, setIsAuthenticated]);
 
@@ -101,7 +95,6 @@ const Login = ({ setIsAuthenticated }) => {
         <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-4 md:mb-6">Login</h2>
 
         <form className="space-y-4 md:space-y-6" onSubmit={handleLogin}>
-          {/* Email Input */}
           <div className="space-y-1">
             <label htmlFor="email" className="block text-gray-400 text-sm md:text-base">
               Email
@@ -118,7 +111,6 @@ const Login = ({ setIsAuthenticated }) => {
             />
           </div>
 
-          {/* Password Input */}
           <div className="space-y-1">
             <label htmlFor="password" className="block text-gray-400 text-sm md:text-base">
               Password
@@ -140,7 +132,6 @@ const Login = ({ setIsAuthenticated }) => {
             </div>
           </div>
 
-          {/* Sign In Button */}
           <button
             type="submit"
             className="w-full p-2 md:p-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg"
@@ -149,7 +140,7 @@ const Login = ({ setIsAuthenticated }) => {
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-        {/* Social Login Section */}
+
         <div className="flex items-center justify-center mt-4 md:mt-6 space-x-2 md:space-x-3">
           <div className="flex-1 h-px bg-gray-700" />
           <p className="text-xs md:text-sm text-gray-400">Login with social accounts</p>
