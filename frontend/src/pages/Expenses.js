@@ -1,59 +1,245 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FaTrash, FaEdit } from 'react-icons/fa';
+import axios from 'axios';
+import config from '../utils/config';
+import { getCurrentUser } from 'aws-amplify/auth';
+
+// Move constants outside component
+const API_ENDPOINT = config.apiEndpoint;
+const axiosConfig = {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: false
+};
 
 const Expenses = () => {
-  // States for expenses and incomes
-  const [expenses, setExpenses] = useState([
-    { id: 1, name: 'Groceries', amount: 120, date: '2024-10-01' },
-    { id: 2, name: 'Electricity Bill', amount: 80, date: '2024-10-02' },
-  ]);
+  // Define getCurrentDate function first
+  const getCurrentDate = () => {
+    // Get current date in IST
+    const now = new Date();
+    
+    // If time is before midnight (00:00), use current date
+    // If time is after midnight, use next date
+    if (now.getHours() === 0 && now.getMinutes() === 0) {
+      // It's exactly midnight, add one day
+      now.setDate(now.getDate() + 1);
+    }
+    
+    // Format date to YYYY-MM-DD
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  };
 
-  const [incomes, setIncomes] = useState([
-    { id: 1, name: 'Salary', amount: 2000, date: '2024-10-01' },
-  ]);
-
-  const [newTransaction, setNewTransaction] = useState({ name: '', amount: '', date: '', type: 'expense' });
+  // Initialize states
+  const [expenses, setExpenses] = useState([]);
+  const [incomes, setIncomes] = useState([]);
+  const [newTransaction, setNewTransaction] = useState({ 
+    name: '', 
+    amount: '', 
+    date: getCurrentDate(),
+    type: 'expense' 
+  });
   const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Helper functions for both expenses and incomes
-  const handleAddTransaction = () => {
-    if (!newTransaction.name || !newTransaction.amount || !newTransaction.date) return;
-    const updatedList = [
-      ...newTransaction.type === 'expense' ? expenses : incomes,
-      { ...newTransaction, id: Date.now() }
-    ];
-    newTransaction.type === 'expense' ? setExpenses(updatedList) : setIncomes(updatedList);
-    setNewTransaction({ name: '', amount: '', date: '', type: 'expense' });
+  // Wrap fetchTransactions with useCallback
+  const fetchTransactions = useCallback(async () => {
+    try {
+      setLoading(true);
+      const userId = await getUserId();
+      if (!userId) return;
+
+      const response = await axios.get(API_ENDPOINT, {
+        ...axiosConfig,
+        headers: {
+          ...axiosConfig.headers,
+          'Authorization': userId
+        }
+      });
+
+      let transactions = response.data;
+      if (typeof transactions === 'string') {
+        transactions = JSON.parse(transactions);
+      }
+
+      const mappedTransactions = transactions.map(t => ({
+        id: t.id,
+        name: t.description,
+        amount: t.amount,
+        date: t.date,
+        type: t.category
+      }));
+
+      setExpenses(mappedTransactions.filter(t => t.type === 'expense'));
+      setIncomes(mappedTransactions.filter(t => t.type === 'income'));
+    } catch (error) {
+      setError('Failed to fetch transactions');
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Empty dependency array is now fine
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
+  // Simplified getUserId function without logging
+  const getUserId = async () => {
+    try {
+      const user = await getCurrentUser();
+      if (user.userId) {
+        return user.userId;
+      }
+      throw new Error('Could not determine user ID');
+    } catch (error) {
+      console.error('Error getting user ID:', error);
+      setError('Authentication error');
+      return null;
+    }
   };
 
-  const handleEditTransaction = (transaction, type) => {
-    setNewTransaction({ ...transaction, type });
+  // Update handleAddTransaction to use getCurrentDate
+  const handleAddTransaction = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const userId = await getUserId();
+      if (!userId) return;
+
+      if (!newTransaction.name || !newTransaction.amount || !newTransaction.date) {
+        setError('Please fill in all fields');
+        return;
+      }
+
+      const transactionData = {
+        description: newTransaction.name,
+        amount: Number(newTransaction.amount),
+        date: newTransaction.date,
+        category: newTransaction.type
+      };
+
+      const response = await axios.post(API_ENDPOINT, transactionData, {
+        ...axiosConfig,
+        headers: {
+          ...axiosConfig.headers,
+          'Authorization': userId
+        }
+      });
+
+      if (response.data) {
+        await fetchTransactions();
+        setNewTransaction({ 
+          name: '', 
+          amount: '', 
+          date: getCurrentDate(),
+          type: 'expense' 
+        });
+      }
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      setError(error.response?.data?.error || 'Failed to add transaction');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditTransaction = (transaction) => {
     setEditingId(transaction.id);
+    setNewTransaction({
+      name: transaction.name,
+      amount: transaction.amount,
+      date: transaction.date,
+      type: transaction.type
+    });
   };
 
-  const handleSaveEdit = () => {
-    const updateList = (list) =>
-      list.map((transaction) => (transaction.id === editingId ? newTransaction : transaction));
-    newTransaction.type === 'expense' ? setExpenses(updateList(expenses)) : setIncomes(updateList(incomes));
-    setEditingId(null);
-    setNewTransaction({ name: '', amount: '', date: '', type: 'expense' });
+  // Update handleSaveEdit to use user ID
+  const handleSaveEdit = async () => {
+    try {
+      setLoading(true);
+      const userId = await getUserId();
+      if (!userId) return;
+      
+      const updatedTransaction = {
+        description: newTransaction.name,
+        amount: Number(newTransaction.amount),
+        date: newTransaction.date,
+        category: newTransaction.type
+      };
+
+      await axios.put(`${API_ENDPOINT}/${editingId}`, updatedTransaction, {
+        ...axiosConfig,
+        headers: {
+          ...axiosConfig.headers,
+          'Authorization': userId
+        }
+      });
+      
+      await fetchTransactions();
+      setEditingId(null);
+      setNewTransaction({ name: '', amount: '', date: '', type: 'expense' });
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      setError('Failed to update transaction');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteTransaction = (id, type) => {
-    const updatedList = (type === 'expense' ? expenses : incomes).filter((item) => item.id !== id);
-    type === 'expense' ? setExpenses(updatedList) : setIncomes(updatedList);
+  // Update handleDeleteTransaction to use user ID
+  const handleDeleteTransaction = async (id, type) => {
+    try {
+      setLoading(true);
+      const userId = await getUserId();
+      if (!userId) return;
+
+      await axios.delete(`${API_ENDPOINT}/${id}`, {
+        ...axiosConfig,
+        headers: {
+          ...axiosConfig.headers,
+          'Authorization': userId
+        }
+      });
+      
+      await fetchTransactions();
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      setError('Failed to delete transaction');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Rest of your JSX remains the same
   return (
     <div className="bg-black text-white min-h-screen p-6 font-sans">
+      {loading && (
+        <div className="text-center py-4">
+          <p>Loading...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-red-500 text-white p-4 rounded-lg mb-4">
+          <p>{error}</p>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-semibold">Manage Transactions</h1>
       </header>
 
-      {/* Add New Transaction */}
+      {/* Add New Transaction Form */}
       <section className="bg-gray-900 p-6 rounded-lg shadow-md mb-6">
-        <h2 className="text-xl font-semibold mb-4">Add New Transaction</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          {editingId ? 'Edit Transaction' : 'Add New Transaction'}
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <input
             type="text"
@@ -85,8 +271,10 @@ const Expenses = () => {
           </select>
         </div>
         <button
-          className="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
+          className={`mt-4 ${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'} 
+            text-white py-2 px-4 rounded-lg`}
           onClick={editingId ? handleSaveEdit : handleAddTransaction}
+          disabled={loading}
         >
           {editingId ? 'Save Changes' : 'Add Transaction'}
         </button>
@@ -104,10 +292,18 @@ const Expenses = () => {
                 <span className="text-gray-500 text-sm">{expense.date}</span>
               </div>
               <div className="flex space-x-3">
-                <button className="text-yellow-400 hover:text-yellow-500" onClick={() => handleEditTransaction(expense, 'expense')}>
+                <button 
+                  className="text-yellow-400 hover:text-yellow-500" 
+                  onClick={() => handleEditTransaction(expense)}
+                  disabled={loading}
+                >
                   <FaEdit />
                 </button>
-                <button className="text-red-400 hover:text-red-500" onClick={() => handleDeleteTransaction(expense.id, 'expense')}>
+                <button 
+                  className="text-red-400 hover:text-red-500" 
+                  onClick={() => handleDeleteTransaction(expense.id, 'expense')}
+                  disabled={loading}
+                >
                   <FaTrash />
                 </button>
               </div>
@@ -117,7 +313,7 @@ const Expenses = () => {
       </section>
 
       {/* Incomes List */}
-      <section className=" mb-4 pb-16 md:pb-4">
+      <section className="mb-4 pb-16 md:pb-4">
         <h2 className="text-xl font-semibold mb-4">Income History</h2>
         <div className="space-y-3">
           {incomes.map((income) => (
@@ -128,10 +324,18 @@ const Expenses = () => {
                 <span className="text-gray-500 text-sm">{income.date}</span>
               </div>
               <div className="flex space-x-3">
-                <button className="text-yellow-400 hover:text-yellow-500" onClick={() => handleEditTransaction(income, 'income')}>
+                <button 
+                  className="text-yellow-400 hover:text-yellow-500" 
+                  onClick={() => handleEditTransaction(income)}
+                  disabled={loading}
+                >
                   <FaEdit />
                 </button>
-                <button className="text-red-400 hover:text-red-500" onClick={() => handleDeleteTransaction(income.id, 'income')}>
+                <button 
+                  className="text-red-400 hover:text-red-500" 
+                  onClick={() => handleDeleteTransaction(income.id, 'income')}
+                  disabled={loading}
+                >
                   <FaTrash />
                 </button>
               </div>

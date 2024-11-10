@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, } from "react-router-dom";
 import Profile from './pages/Profile';
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
@@ -15,7 +9,8 @@ import Budget from "./pages/Budgeting";
 import Reports from "./pages/Reports";
 import Login from "./pages/auth/login";
 import Signup from "./pages/auth/signup";
-import { fetchAuthSession } from "@aws-amplify/auth";
+import { fetchAuthSession, signOut } from "@aws-amplify/auth";
+import { Hub } from "@aws-amplify/core";
 import { Amplify } from "aws-amplify";
 import awsmobile from "./aws-exports";
 
@@ -27,51 +22,76 @@ function App() {
 
   useEffect(() => {
     const checkAuthStatus = async () => {
-      // Check local storage first
-      const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      
-      if (loggedIn) {
-        // If the user is logged in, check the session
-        try {
-          const session = await fetchAuthSession();
-          if (session) {
-            setIsAuthenticated(true);
-          } else {
-            setIsAuthenticated(false);
-            localStorage.removeItem('isLoggedIn'); // Clear local storage if session is invalid
-          }
-        } catch (error) {
-          console.error('Error fetching auth session:', error);
+      try {
+        const session = await fetchAuthSession();
+        if (session?.tokens) {
+          setIsAuthenticated(true);
+          localStorage.setItem('isLoggedIn', 'true');
+        } else {
           setIsAuthenticated(false);
-          localStorage.removeItem('isLoggedIn'); // Clear local storage on error
+          localStorage.removeItem('isLoggedIn');
         }
-      } else {
+      } catch (error) {
+        if (error.name !== 'InvalidIdentityPoolConfigurationException') {
+          console.error('Error fetching auth session:', error);
+        }
         setIsAuthenticated(false);
+        localStorage.removeItem('isLoggedIn');
       }
     };
-    
-    checkAuthStatus();
-  }, []);
-  
 
-  const isAuthPage =
-    location.pathname === "/login" || location.pathname === "/signup";
+    const handleAuthEvents = ({ payload: { event } }) => {
+      switch (event) {
+        case 'signIn':
+          checkAuthStatus();
+          break;
+        case 'signOut':
+          setIsAuthenticated(false);
+          localStorage.removeItem('isLoggedIn');
+          break;
+        default:
+          break;
+      }
+    };
+
+    const hubListener = Hub.listen('auth', handleAuthEvents);
+    checkAuthStatus();
+
+    return () => {
+      if (hubListener) {
+        hubListener();
+      }
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut({ global: true });
+      setIsAuthenticated(false);
+      localStorage.removeItem('isLoggedIn');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/signup";
 
   return (
     <div className="app-container">
       {!isAuthenticated && !isAuthPage && <Navigate to="/login" replace />}
-      {isAuthenticated && !isAuthPage && <Navbar />}
+      {isAuthenticated && !isAuthPage && <Navbar onLogout={handleLogout} />}
       <div className="flex">
         {isAuthenticated && !isAuthPage && <Sidebar />}
         <div className={`flex-grow ${isAuthPage ? "" : "ml-0 md:ml-20"}`}>
           <Routes>
-          <Route
-          path="/login"
-          element={
-            isAuthenticated ? <Navigate to="/" replace /> : <Login setIsAuthenticated={setIsAuthenticated} />
-          }
-          />
-
+            <Route
+              path="/login"
+              element={
+                isAuthenticated ? 
+                <Navigate to="/" replace /> : 
+                <Login setIsAuthenticated={setIsAuthenticated} />
+              }
+            />
             <Route
               path="/signup"
               element={
@@ -81,21 +101,13 @@ function App() {
             <Route
               path="/"
               element={
-                isAuthenticated ? (
-                  <Dashboard />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
+                isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />
               }
             />
             <Route
               path="/transactions"
               element={
-                isAuthenticated ? (
-                  <Expenses />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
+                isAuthenticated ? <Expenses /> : <Navigate to="/login" replace />
               }
             />
             <Route

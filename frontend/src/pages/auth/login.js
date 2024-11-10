@@ -33,6 +33,10 @@ const Login = ({ setIsAuthenticated }) => {
         case "signInWithRedirect_failure":
           setError("An error occurred during the Google sign-in process.");
           break;
+        case "signOut":
+          window.sessionStorage.clear();
+          window.localStorage.clear();
+          break;
         default:
           break;
       }
@@ -51,11 +55,7 @@ const Login = ({ setIsAuthenticated }) => {
       await signIn({
         username: email,
         password,
-        attributes: {
-          email,
-        },
       });
-      localStorage.setItem('isLoggedIn', 'true');
       setIsAuthenticated(true);
       navigate('/');
     } catch (error) {
@@ -80,8 +80,32 @@ const Login = ({ setIsAuthenticated }) => {
 
   const handleGoogleSignIn = async () => {
     try {
+      // Clear all storage
+      window.sessionStorage.clear();
+      window.localStorage.clear();
+      
+      // Ensure Google Auth instance is signed out
+      const googleAuth = window.gapi?.auth2?.getAuthInstance();
+      if (googleAuth) {
+        await googleAuth.signOut();
+        await googleAuth.disconnect(); // Disconnect to ensure full sign-out
+      }
+      
       await signInWithRedirect({
-        provider: 'Google'
+        provider: 'Google',
+        options: {
+          prompt: 'select_account', // Force account selection
+          accessType: 'offline',
+          customState: Date.now().toString(),
+          responseType: 'code',
+          scope: ['email', 'profile'],
+          max_age: 0, // Force reauthentication
+          authorizationParams: {
+            prompt: 'select_account',
+            access_type: 'offline',
+            response_type: 'code',
+          }
+        }
       });
     } catch (error) {
       console.error('Error signing in with Google:', error);

@@ -1,14 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaTrashAlt } from 'react-icons/fa';
 
 const Budget = () => {
-  const [totalBudget, setTotalBudget] = useState(6000);
-  const [spent, setSpent] = useState(3000);
+  const [totalBudget, setTotalBudget] = useState(0);
+  const [spent, setSpent] = useState(0);
   const [categories, setCategories] = useState([
     { id: 1, name: 'Groceries', limit: 800, spent: 600 },
     { id: 2, name: 'Transport', limit: 300, spent: 200 },
     { id: 3, name: 'Entertainment', limit: 500, spent: 450 },
   ]);
+
+  useEffect(() => {
+    const fetchBudgetData = async () => {
+      try {
+        // Calculate total budget from categories
+        const totalBudgetAmount = categories.reduce((sum, category) => sum + category.limit, 0);
+        setTotalBudget(totalBudgetAmount);
+
+        // Calculate total spent from categories
+        const totalSpentAmount = categories.reduce((sum, category) => sum + category.spent, 0);
+        setSpent(totalSpentAmount);
+      } catch (error) {
+        console.error('Error calculating budget totals:', error);
+      }
+    };
+    
+    fetchBudgetData();
+  }, [categories]);
 
   const addCategory = () => {
     const newCategory = {
