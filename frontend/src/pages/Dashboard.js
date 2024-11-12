@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaBell, FaPlusCircle } from 'react-icons/fa';
+import { FaBell } from 'react-icons/fa';
 
 const Dashboard = () => {
   return (
@@ -76,7 +76,7 @@ const Dashboard = () => {
       </section>
 
       {/* Reports and Insights */}
-      <section>
+      <section className="mb-24 sm:mb-0">
         <h2 className="text-xl font-semibold mb-4">Reports and Insights</h2>
         <div className="bg-gray-900 p-6 rounded-lg shadow-md mb-6">
           <h3 className="font-semibold mb-4">Expense Distribution</h3>
@@ -92,18 +92,6 @@ const Dashboard = () => {
           </div>
         </div>
       </section>
-
-      {/* Quick Actions */}
-      <footer className="flex justify-center gap-4">
-        <button className="flex items-center justify-center w-full max-w-xs bg-blue-700 hover:bg-blue-800 text-white py-2 rounded-lg">
-          <FaPlusCircle className="mr-2" />
-          Add Income
-        </button>
-        <button className="flex items-center justify-center w-full max-w-xs bg-purple-700 hover:bg-purple-800 text-white py-2 rounded-lg">
-          <FaPlusCircle className="mr-2" />
-          Add Expense
-        </button>
-      </footer>
     </div>
   );
 };

@@ -41,11 +41,36 @@ const Expenses = () => {
     name: '', 
     amount: '', 
     date: getCurrentDate(),
-    type: 'expense' 
+    type: 'expense',
+    category: 'Other'
   });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Add categories array
+  const expenseCategories = [
+    'Food & Dining',
+    'Transportation',
+    'Housing',
+    'Utilities',
+    'Healthcare',
+    'Entertainment',
+    'Shopping',
+    'Education',
+    'Travel',
+    'Other'
+  ];
+
+  const incomeCategories = [
+    'Salary',
+    'Freelance',
+    'Investments',
+    'Rental',
+    'Business',
+    'Gift',
+    'Other'
+  ];
 
   // Wrap fetchTransactions with useCallback
   const fetchTransactions = useCallback(async () => {
@@ -69,10 +94,11 @@ const Expenses = () => {
 
       const mappedTransactions = transactions.map(t => ({
         id: t.id,
-        name: t.description,
+        name: t.description || t.name,
         amount: t.amount,
         date: t.date,
-        type: t.category
+        type: t.type,
+        category: t.category
       }));
 
       setExpenses(mappedTransactions.filter(t => t.type === 'expense'));
@@ -120,7 +146,8 @@ const Expenses = () => {
         description: newTransaction.name,
         amount: Number(newTransaction.amount),
         date: newTransaction.date,
-        category: newTransaction.type
+        category: newTransaction.category,
+        type: newTransaction.type
       };
 
       const response = await axios.post(API_ENDPOINT, transactionData, {
@@ -137,7 +164,8 @@ const Expenses = () => {
           name: '', 
           amount: '', 
           date: getCurrentDate(),
-          type: 'expense' 
+          type: 'expense',
+          category: 'Other'
         });
       }
     } catch (error) {
@@ -154,7 +182,8 @@ const Expenses = () => {
       name: transaction.name,
       amount: transaction.amount,
       date: transaction.date,
-      type: transaction.type
+      type: transaction.type,
+      category: transaction.category
     });
   };
 
@@ -169,7 +198,8 @@ const Expenses = () => {
         description: newTransaction.name,
         amount: Number(newTransaction.amount),
         date: newTransaction.date,
-        category: newTransaction.type
+        category: newTransaction.category,
+        type: newTransaction.type
       };
 
       await axios.put(`${API_ENDPOINT}/${editingId}`, updatedTransaction, {
@@ -182,7 +212,13 @@ const Expenses = () => {
       
       await fetchTransactions();
       setEditingId(null);
-      setNewTransaction({ name: '', amount: '', date: '', type: 'expense' });
+      setNewTransaction({ 
+        name: '', 
+        amount: '', 
+        date: getCurrentDate(), 
+        type: 'expense', 
+        category: 'Other' 
+      });
     } catch (error) {
       console.error('Error updating transaction:', error);
       setError('Failed to update transaction');
@@ -240,7 +276,7 @@ const Expenses = () => {
         <h2 className="text-xl font-semibold mb-4">
           {editingId ? 'Edit Transaction' : 'Add New Transaction'}
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <input
             type="text"
             placeholder="Name"
@@ -264,11 +300,42 @@ const Expenses = () => {
           <select
             className="p-3 bg-gray-800 text-white rounded-lg"
             value={newTransaction.type}
-            onChange={(e) => setNewTransaction({ ...newTransaction, type: e.target.value })}
+            onChange={(e) => setNewTransaction({ 
+              ...newTransaction, 
+              type: e.target.value,
+              category: e.target.value === 'expense' ? 'Other' : 'Salary'
+            })}
           >
             <option value="expense">Expense</option>
             <option value="income">Income</option>
           </select>
+          {/* Add category dropdown - only show for expenses */}
+          {newTransaction.type === 'expense' && (
+            <select
+              className="p-3 bg-gray-800 text-white rounded-lg"
+              value={newTransaction.category}
+              onChange={(e) => setNewTransaction({ ...newTransaction, category: e.target.value })}
+            >
+              {expenseCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          )}
+          {newTransaction.type === 'income' && (
+            <select
+              className="p-3 bg-gray-800 text-white rounded-lg"
+              value={newTransaction.category}
+              onChange={(e) => setNewTransaction({ ...newTransaction, category: e.target.value })}
+            >
+              {incomeCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <button
           className={`mt-4 ${editingId ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'} 
@@ -289,7 +356,12 @@ const Expenses = () => {
               <div className="flex flex-col">
                 <span className="font-bold">{expense.name}</span>
                 <span className="text-gray-400">${expense.amount}</span>
-                <span className="text-gray-500 text-sm">{expense.date}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-500 text-sm">{expense.date}</span>
+                  <span className="text-xs px-2 py-1 bg-gray-700 rounded-full text-gray-300">
+                    {expense.category || 'Other'}
+                  </span>
+                </div>
               </div>
               <div className="flex space-x-3">
                 <button 
@@ -321,7 +393,12 @@ const Expenses = () => {
               <div className="flex flex-col">
                 <span className="font-bold">{income.name}</span>
                 <span className="text-gray-400">${income.amount}</span>
-                <span className="text-gray-500 text-sm">{income.date}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-500 text-sm">{income.date}</span>
+                  <span className="text-xs px-2 py-1 bg-gray-700 rounded-full text-gray-300">
+                    {income.category || 'Other'}
+                  </span>
+                </div>
               </div>
               <div className="flex space-x-3">
                 <button 

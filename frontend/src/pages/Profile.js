@@ -1,29 +1,128 @@
 import React, { useState, useEffect } from 'react';
-import { signOut, fetchUserAttributes, updateUserAttributes, confirmUserAttribute } from '@aws-amplify/auth'; 
-import { ArrowRightOnRectangleIcon, UserCircleIcon, EnvelopeIcon, PencilIcon, ShieldCheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { signOut, fetchUserAttributes, getCurrentUser } from '@aws-amplify/auth';
+import { ArrowRightOnRectangleIcon, UserCircleIcon, EnvelopeIcon, PencilIcon } from '@heroicons/react/24/solid';
+import axios from 'axios';
+import config from '../utils/config';
 
+const API_ENDPOINT = `${config.apiEndpoint.replace('/transactions', '')}/profile`;
+const axiosConfig = {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: false
+};
 const Profile = () => {
   const [email, setEmail] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [updateError, setUpdateError] = useState('');
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [verificationError, setVerificationError] = useState('');
+  const [showCreateProfile, setShowCreateProfile] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [profileData, setProfileData] = useState({
+    name: '',
+    currency: 'USD'
+  });
 
+  // Fetch user profile data
+  const fetchUserProfile = async () => {
+    try {
+      const user = await getCurrentUser();
+      const userId = user.userId;
+      
+      console.log('Fetching profile for userId:', userId);
+
+      const response = await axios.get(API_ENDPOINT, {
+        ...axiosConfig,
+        headers: {
+          ...axiosConfig.headers,
+          'Authorization': userId
+        }
+      });
+
+      console.log('Profile API Response:', response.data);
+
+      if (response.data.statusCode === 401 || response.data.statusCode === 404) {
+        console.log('No profile found, showing create profile modal');
+        setShowCreateProfile(true);
+        return;
+      }
+
+      const profileData = typeof response.data.body === 'string' 
+        ? JSON.parse(response.data.body) 
+        : response.data.body;
+
+      console.log('Parsed profile data:', profileData);
+
+      if (profileData) {
+        setProfileData(profileData);
+        setShowCreateProfile(false);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      console.error('Error details:', error.response?.data);
+      setError('Failed to fetch profile data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch email from Cognito
   useEffect(() => {
     const fetchUserEmail = async () => {
       try {
         const attributes = await fetchUserAttributes();
-        const emailAttr = attributes.email;
-        setEmail(emailAttr);
-        setNewEmail(emailAttr);
+        setEmail(attributes.email);
       } catch (error) {
         console.error('Error fetching user email:', error);
       }
     };
     fetchUserEmail();
+    fetchUserProfile();
   }, []);
+
+  const handleCreateProfile = async () => {
+    try {
+      setLoading(true);
+      const user = await getCurrentUser();
+      const userId = user.userId;
+
+      console.log('Creating profile for userId:', userId);
+      console.log('Profile data to create:', profileData);
+
+      const response = await axios.post(
+        API_ENDPOINT, 
+        {
+          name: profileData.name,
+          currency: profileData.currency
+        },
+        {
+          ...axiosConfig,
+          headers: {
+            ...axiosConfig.headers,
+            'Authorization': userId
+          }
+        }
+      );
+
+      console.log('Create profile response:', response.data);
+
+      if (response.data.statusCode === 201) {
+        const createdProfile = typeof response.data.body === 'string' 
+          ? JSON.parse(response.data.body) 
+          : response.data.body;
+        
+        console.log('Created profile:', createdProfile);
+        setProfileData(createdProfile);
+        setShowCreateProfile(false);
+        await fetchUserProfile();
+      }
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      console.error('Error details:', error.response?.data);
+      setError('Failed to create profile');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUpdateProfile = async () => {
     if (!isEditing) {
@@ -32,36 +131,45 @@ const Profile = () => {
     }
 
     try {
-      await updateUserAttributes({
-        userAttributes: {
-          email: newEmail,
-        }
-      });
-      
-      setIsEditing(false);
-      setUpdateError('');
-      setShowVerificationModal(true);
-    } catch (error) {
-      console.error('Error updating email:', error);
-      setUpdateError(error.message || 'An error occurred while updating email');
-    }
-  };
+      setLoading(true);
+      const user = await getCurrentUser();
+      const userId = user.userId;
 
-  const handleVerifyEmail = async (e) => {
-    e.preventDefault();
-    try {
-      await confirmUserAttribute({
-        userAttributeKey: 'email',
-        confirmationCode: verificationCode
-      });
-      setEmail(newEmail);
-      setShowVerificationModal(false);
-      setVerificationCode('');
-      setVerificationError('');
-      alert('Email verified successfully!');
+      console.log('Updating profile for userId:', userId);
+      console.log('Profile data to update:', profileData);
+
+      const response = await axios.put(
+        API_ENDPOINT,
+        {
+          name: profileData.name,
+          currency: profileData.currency
+        },
+        {
+          ...axiosConfig,
+          headers: {
+            ...axiosConfig.headers,
+            'Authorization': userId
+          }
+        }
+      );
+
+      console.log('Update profile response:', response.data);
+
+      const updatedProfile = typeof response.data.body === 'string' 
+        ? JSON.parse(response.data.body) 
+        : response.data.body;
+
+      if (updatedProfile) {
+        console.log('Updated profile:', updatedProfile);
+        setProfileData(updatedProfile);
+        setIsEditing(false);
+      }
     } catch (error) {
-      console.error('Error verifying email:', error);
-      setVerificationError(error.message || 'Invalid verification code');
+      console.error('Error updating profile:', error);
+      console.error('Error details:', error.response?.data);
+      setError('Failed to update profile');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,15 +183,100 @@ const Profile = () => {
     }
   };
 
+  // Create Profile Modal
+  const CreateProfileModal = () => (
+    <div className="fixed inset-0 bg-black flex items-center justify-center z-50 px-4">
+      <div className="bg-black border border-gray-800 rounded-lg p-8 max-w-md w-full relative shadow-2xl">
+        <h3 className="text-2xl font-semibold mb-6 text-indigo-400 text-center">Welcome! Create Your Profile</h3>
+        <p className="text-gray-400 mb-8 text-center">Please set up your profile to continue using the app.</p>
+        <div className="space-y-6">
+          <div>
+            <label className="block text-gray-300 mb-2 text-sm">Name <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={profileData.name}
+              onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full p-3 bg-gray-900 border border-gray-800 rounded-lg text-white 
+                focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all
+                focus:outline-none"
+              required
+              placeholder="Enter your name"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-gray-300 mb-2 text-sm">Preferred Currency <span className="text-red-500">*</span></label>
+            <select
+              value={profileData.currency}
+              onChange={(e) => setProfileData(prev => ({ ...prev, currency: e.target.value }))}
+              className="w-full p-3 bg-gray-900 border border-gray-800 rounded-lg text-white 
+                focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all
+                focus:outline-none"
+              required
+            >
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="INR">INR (₹)</option>
+            </select>
+          </div>
+          {error && (
+            <div className="text-red-500 text-sm bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-3">
+              {error}
+            </div>
+          )}
+          <button
+            onClick={handleCreateProfile}
+            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 
+              disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 
+              transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+            disabled={loading || !profileData.name}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creating...
+              </span>
+            ) : (
+              'Create Profile'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  // Render CreateProfileModal before the main content if showCreateProfile is true
+  if (showCreateProfile) {
+    return <CreateProfileModal />;
+  }
+
   return (
     <div className="flex flex-col items-center py-8 px-4 sm:px-6 md:px-12 pb-24 md:pb-8 bg-black min-h-[calc(100vh-80px)] text-white">
+      {error && (
+        <div className="bg-red-500 text-white p-4 rounded-lg mb-6 w-full max-w-lg">
+          {error}
+        </div>
+      )}
+
       {/* Profile Header */}
       <div className="relative bg-gray-800 shadow-2xl rounded-3xl p-6 sm:p-8 md:p-10 max-w-lg w-full text-center transition-transform duration-300 hover:scale-105">
         <div className="flex justify-center mb-4 sm:mb-6">
           <UserCircleIcon className="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 text-indigo-500" />
         </div>
-        <h2 className="text-2xl sm:text-3xl font-semibold mb-1 sm:mb-2">John Doe</h2>
-        <p className="text-gray-300 text-sm sm:text-base">{email || 'Loading...'}</p>
+        <h2 className="text-2xl sm:text-3xl font-semibold mb-1 sm:mb-2">{profileData.name}</h2>
+        <p className="text-gray-300 text-sm sm:text-base">{email}</p>
       </div>
 
       {/* Personal Information Section */}
@@ -91,39 +284,46 @@ const Profile = () => {
         <h3 className="text-xl sm:text-2xl font-semibold mb-4 text-indigo-400">Personal Information</h3>
         <div className="space-y-5">
           <div className="flex items-center space-x-4">
-            <EnvelopeIcon className="w-5 sm:w-6 h-5 sm:h-6 text-indigo-500" />
+            <UserCircleIcon className="w-5 sm:w-6 h-5 sm:h-6 text-indigo-500" />
             <input
-              type="email"
-              value={isEditing ? newEmail : email}
-              onChange={(e) => setNewEmail(e.target.value)}
+              type="text"
+              value={profileData.name}
+              onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
               className="flex-grow p-2 sm:p-3 border border-gray-700 rounded-md bg-gray-700 text-white focus:border-indigo-500 transition-all"
               readOnly={!isEditing}
             />
           </div>
-          {updateError && (
-            <p className="text-red-500 text-sm mt-2">{updateError}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Settings Section */}
-      <div className="bg-gray-800 shadow-2xl rounded-3xl p-6 sm:p-8 mt-6 sm:mt-8 max-w-lg w-full">
-        <h3 className="text-xl sm:text-2xl font-semibold mb-4 text-indigo-400">Settings</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-300 flex items-center">
-              <ShieldCheckIcon className="w-5 h-5 text-indigo-500 mr-2" /> Two-Factor Authentication
-            </span>
-            <input type="checkbox" className="form-checkbox rounded-md text-indigo-500 focus:ring-0 focus:border-indigo-500 transition-all" />
+          <div className="flex items-center space-x-4">
+            <EnvelopeIcon className="w-5 sm:w-6 h-5 sm:h-6 text-indigo-500" />
+            <input
+              type="email"
+              value={email}
+              className="flex-grow p-2 sm:p-3 border border-gray-700 rounded-md bg-gray-700 text-white"
+              readOnly
+            />
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-xl">💰</span>
+            <select
+              value={profileData.currency}
+              onChange={(e) => setProfileData({ ...profileData, currency: e.target.value })}
+              className="flex-grow p-2 sm:p-3 border border-gray-700 rounded-md bg-gray-700 text-white focus:border-indigo-500 transition-all"
+              disabled={!isEditing}
+            >
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="INR">INR (₹)</option>
+            </select>
           </div>
         </div>
       </div>
 
       {/* Account Actions Section */}
-      <div className="bg-gray-800 shadow-2xl rounded-3xl p-6  sm:p-8 mt-6 sm:mt-8 max-w-lg w-full">
+      <div className="bg-gray-800 shadow-2xl rounded-3xl p-6 sm:p-8 mt-6 sm:mt-8 max-w-lg w-full">
         <h3 className="text-xl sm:text-2xl font-semibold mb-4 text-indigo-400">Account Actions</h3>
         <div className="space-y-4">
-          <button 
+          <button
             onClick={handleUpdateProfile}
             className="w-full bg-indigo-500 text-white py-3 rounded-lg font-semibold hover:bg-indigo-600 transition-transform duration-200 transform hover:scale-105 flex items-center justify-center"
           >
@@ -131,13 +331,12 @@ const Profile = () => {
             {isEditing ? 'Save Changes' : 'Edit Profile'}
           </button>
           {isEditing && (
-            <button 
+            <button
               onClick={() => {
                 setIsEditing(false);
-                setNewEmail(email);
-                setUpdateError('');
+                fetchUserProfile();
               }}
-              className="w-full bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition-transform duration-200 transform hover:scale-105 flex items-center justify-center"
+              className="w-full bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition-transform duration-200 transform hover:scale-105"
             >
               Cancel
             </button>
@@ -151,55 +350,6 @@ const Profile = () => {
           </button>
         </div>
       </div>
-
-      {/* Verification Modal */}
-      {showVerificationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full relative">
-            <button
-              onClick={() => setShowVerificationModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
-            >
-              <XMarkIcon className="w-6 h-6" />
-            </button>
-            
-            <h3 className="text-xl font-semibold mb-4 text-indigo-400">Verify Your Email</h3>
-            <p className="text-gray-300 mb-4">
-              We've sent a verification code to {newEmail}. Please enter the code below to verify your email address.
-            </p>
-            
-            <form onSubmit={handleVerifyEmail} className="space-y-4">
-              <input
-                type="text"
-                placeholder="Enter verification code"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-                className="w-full p-3 border border-gray-700 rounded-md bg-gray-700 text-white focus:border-indigo-500 transition-all"
-              />
-              
-              {verificationError && (
-                <p className="text-red-500 text-sm">{verificationError}</p>
-              )}
-              
-              <div className="flex space-x-3">
-                <button
-                  type="submit"
-                  className="flex-1 bg-indigo-500 text-white py-2 rounded-lg font-semibold hover:bg-indigo-600 transition-all"
-                >
-                  Verify
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowVerificationModal(false)}
-                  className="flex-1 bg-gray-600 text-white py-2 rounded-lg font-semibold hover:bg-gray-700 transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
