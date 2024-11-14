@@ -7,6 +7,7 @@ import { Bar, Doughnut } from 'react-chartjs-2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { formatCurrency, fetchUserPreferences } from '../utils/formatters';
 
 const API_ENDPOINT = config.reportsEndpoint;
 const axiosConfig = {
@@ -32,7 +33,12 @@ const Reports = () => {
 
   // Fetch reports on component mount
   useEffect(() => {
-    fetchReports();
+    const initializeData = async () => {
+      const user = await getCurrentUser();
+      await fetchUserPreferences(user.userId);
+      fetchReports();
+    };
+    initializeData();
   }, []);
 
   const fetchReports = async () => {
@@ -697,13 +703,13 @@ const Reports = () => {
                     <div className="bg-gray-900 p-4 rounded-lg">
                       <p className="text-gray-400 text-sm">Total Income</p>
                       <p className="text-2xl font-bold text-green-500">
-                        ${(selectedReport.totals?.income || 0).toFixed(2)}
+                        {formatCurrency(selectedReport.totals.income)}
                       </p>
                     </div>
                     <div className="bg-gray-900 p-4 rounded-lg">
                       <p className="text-gray-400 text-sm">Total Expenses</p>
                       <p className="text-2xl font-bold text-red-500">
-                        ${(selectedReport.totals?.expenses || 0).toFixed(2)}
+                        {formatCurrency(selectedReport.totals.expenses)}
                       </p>
                     </div>
                     <div className="bg-gray-900 p-4 rounded-lg">
@@ -713,7 +719,7 @@ const Reports = () => {
                           ? 'text-green-500' 
                           : 'text-red-500'
                       }`}>
-                        ${((selectedReport.totals?.income || 0) - (selectedReport.totals?.expenses || 0)).toFixed(2)}
+                        {formatCurrency((selectedReport.totals?.income || 0) - (selectedReport.totals?.expenses || 0))}
                       </p>
                     </div>
                   </div>

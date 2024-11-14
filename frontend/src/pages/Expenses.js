@@ -3,6 +3,7 @@ import { FaTrash, FaEdit } from 'react-icons/fa';
 import axios from 'axios';
 import config from '../utils/config';
 import { getCurrentUser } from 'aws-amplify/auth';
+import { formatCurrency, fetchUserPreferences } from '../utils/formatters';
 
 // Move constants outside component
 const API_ENDPOINT = config.apiEndpoint;
@@ -111,8 +112,13 @@ const Expenses = () => {
   }, []); // Empty dependency array is now fine
 
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    const initializeData = async () => {
+      const user = await getCurrentUser();
+      await fetchUserPreferences(user.userId);
+      fetchTransactions();
+    };
+    initializeData();
+  }, []);
 
   // Simplified getUserId function without logging
   const getUserId = async () => {
@@ -355,7 +361,9 @@ const Expenses = () => {
             <div key={expense.id} className="flex justify-between items-center bg-gray-900 p-4 rounded-lg shadow-md">
               <div className="flex flex-col">
                 <span className="font-bold">{expense.name}</span>
-                <span className="text-gray-400">${expense.amount}</span>
+                <p className={`font-medium ${expense.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {expense.type === 'income' ? '+' : '-'}{formatCurrency(Number(expense.amount))}
+                </p>
                 <div className="flex items-center space-x-2">
                   <span className="text-gray-500 text-sm">{expense.date}</span>
                   <span className="text-xs px-2 py-1 bg-gray-700 rounded-full text-gray-300">
@@ -392,7 +400,9 @@ const Expenses = () => {
             <div key={income.id} className="flex justify-between items-center bg-gray-900 p-4 rounded-lg shadow-md">
               <div className="flex flex-col">
                 <span className="font-bold">{income.name}</span>
-                <span className="text-gray-400">${income.amount}</span>
+                <p className={`font-medium ${income.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {income.type === 'income' ? '+' : '-'}{formatCurrency(Number(income.amount))}
+                </p>
                 <div className="flex items-center space-x-2">
                   <span className="text-gray-500 text-sm">{income.date}</span>
                   <span className="text-xs px-2 py-1 bg-gray-700 rounded-full text-gray-300">

@@ -19,6 +19,7 @@ const Profile = () => {
   const [error, setError] = useState('');
   const [profileData, setProfileData] = useState({
     name: '',
+    email: '',
     currency: 'USD'
   });
 
@@ -26,39 +27,33 @@ const Profile = () => {
   const fetchUserProfile = async () => {
     try {
       const user = await getCurrentUser();
-      const userId = user.userId;
-      
-      console.log('Fetching profile for userId:', userId);
-
       const response = await axios.get(API_ENDPOINT, {
         ...axiosConfig,
         headers: {
           ...axiosConfig.headers,
-          'Authorization': userId
+          'Authorization': user.userId
         }
       });
 
-      console.log('Profile API Response:', response.data);
-
       if (response.data.statusCode === 401 || response.data.statusCode === 404) {
-        console.log('No profile found, showing create profile modal');
         setShowCreateProfile(true);
         return;
       }
 
-      const profileData = typeof response.data.body === 'string' 
+      const data = typeof response.data.body === 'string' 
         ? JSON.parse(response.data.body) 
         : response.data.body;
 
-      console.log('Parsed profile data:', profileData);
-
-      if (profileData) {
-        setProfileData(profileData);
+      if (data) {
+        setProfileData({
+          name: data.name || '',
+          email: data.email || '',
+          currency: data.currency || 'USD'
+        });
         setShowCreateProfile(false);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      console.error('Error details:', error.response?.data);
       setError('Failed to fetch profile data');
     } finally {
       setLoading(false);
@@ -83,41 +78,30 @@ const Profile = () => {
     try {
       setLoading(true);
       const user = await getCurrentUser();
-      const userId = user.userId;
-
-      console.log('Creating profile for userId:', userId);
-      console.log('Profile data to create:', profileData);
+      
+      const profilePayload = {
+        name: profileData.name || '',
+        email: profileData.email || '',
+        currency: profileData.currency || 'USD'
+      };
 
       const response = await axios.post(
-        API_ENDPOINT, 
-        {
-          name: profileData.name,
-          currency: profileData.currency
-        },
+        API_ENDPOINT,
+        profilePayload,
         {
           ...axiosConfig,
           headers: {
             ...axiosConfig.headers,
-            'Authorization': userId
+            'Authorization': user.userId
           }
         }
       );
 
-      console.log('Create profile response:', response.data);
-
       if (response.data.statusCode === 201) {
-        const createdProfile = typeof response.data.body === 'string' 
-          ? JSON.parse(response.data.body) 
-          : response.data.body;
-        
-        console.log('Created profile:', createdProfile);
-        setProfileData(createdProfile);
-        setShowCreateProfile(false);
         await fetchUserProfile();
       }
     } catch (error) {
       console.error('Error creating profile:', error);
-      console.error('Error details:', error.response?.data);
       setError('Failed to create profile');
     } finally {
       setLoading(false);
@@ -133,40 +117,31 @@ const Profile = () => {
     try {
       setLoading(true);
       const user = await getCurrentUser();
-      const userId = user.userId;
-
-      console.log('Updating profile for userId:', userId);
-      console.log('Profile data to update:', profileData);
+      
+      const profilePayload = {
+        name: profileData.name || '',
+        email: profileData.email || '',
+        currency: profileData.currency || 'USD'
+      };
 
       const response = await axios.put(
         API_ENDPOINT,
-        {
-          name: profileData.name,
-          currency: profileData.currency
-        },
+        profilePayload,
         {
           ...axiosConfig,
           headers: {
             ...axiosConfig.headers,
-            'Authorization': userId
+            'Authorization': user.userId
           }
         }
       );
 
-      console.log('Update profile response:', response.data);
-
-      const updatedProfile = typeof response.data.body === 'string' 
-        ? JSON.parse(response.data.body) 
-        : response.data.body;
-
-      if (updatedProfile) {
-        console.log('Updated profile:', updatedProfile);
-        setProfileData(updatedProfile);
+      if (response.data.statusCode === 200) {
         setIsEditing(false);
+        await fetchUserProfile();
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      console.error('Error details:', error.response?.data);
       setError('Failed to update profile');
     } finally {
       setLoading(false);
