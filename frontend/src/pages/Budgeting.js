@@ -4,6 +4,7 @@ import axios from 'axios';
 import config from '../utils/config';
 import { Bar } from 'react-chartjs-2';
 import { formatCurrency, fetchUserPreferences } from '../utils/formatters';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 const API_ENDPOINT = config.budgetsEndpoint;
 const axiosConfig = {
@@ -25,51 +26,6 @@ const CATEGORIES = [
   'Travel',
   'Others'
 ];
-
-const ProgressRing = ({ progress, size = 60 }) => {
-  const strokeWidth = 6;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (progress / 100) * circumference;
-  const color = progress > 100 ? '#EF4444' : '#10B981';
-
-  return (
-    <svg width={size} height={size} className="transform -rotate-90">
-      <circle
-        className="text-gray-700"
-        strokeWidth={strokeWidth}
-        stroke="currentColor"
-        fill="transparent"
-        r={radius}
-        cx={size / 2}
-        cy={size / 2}
-      />
-      <circle
-        className="transition-all duration-500 ease-in-out"
-        strokeWidth={strokeWidth}
-        stroke={color}
-        fill="transparent"
-        r={radius}
-        cx={size / 2}
-        cy={size / 2}
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-      />
-      <text
-        x="50%"
-        y="50%"
-        dy=".3em"
-        textAnchor="middle"
-        className="text-sm font-medium"
-        fill="white"
-        transform={`rotate(90 ${size / 2} ${size / 2})`}
-      >
-        {Math.min(Math.round(progress), 100)}%
-      </text>
-    </svg>
-  );
-};
 
 const Budgeting = () => {
   const [budgets, setBudgets] = useState([]);
@@ -225,6 +181,14 @@ const Budgeting = () => {
     };
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-black text-white min-h-screen p-6 font-sans mb-16 lg:mb-0">
       <h1 className="text-3xl font-bold mb-8">Budgeting</h1>
@@ -300,7 +264,7 @@ const Budgeting = () => {
             {budgets.map((budget) => (
               <div 
                 key={budget.category}
-                className="bg-gray-800 p-6 rounded-lg hover:bg-gray-750 transition-colors duration-200"
+                className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-4 lg:p-6 border border-gray-800/50"
               >
                 {editingBudget?.category === budget.category ? (
                   <div className="flex items-center space-x-4">
@@ -324,67 +288,69 @@ const Budgeting = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
+                  <div className="flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-200">{budget.category}</h3>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setEditingBudget(budget)}
+                          className="p-2 text-gray-400 hover:text-indigo-400 transition-colors"
+                        >
+                          <PencilIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBudget(budget.category)}
+                          className="p-2 text-gray-400 hover:text-rose-400 transition-colors"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Budget Info Grid - Optimized for mobile */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Budget Amount */}
+                      <div className="bg-gray-800/50 p-3 rounded-lg">
+                        <p className="text-sm text-gray-400 mb-1">Budget</p>
+                        <p className="text-lg font-semibold text-indigo-400">
+                          {formatCurrency(budget.amount)}
+                        </p>
+                      </div>
+
+                      {/* Spent Amount */}
+                      <div className="bg-gray-800/50 p-3 rounded-lg">
+                        <p className="text-sm text-gray-400 mb-1">Spent</p>
+                        <p className="text-lg font-semibold text-rose-400">
+                          {formatCurrency(budget.spent)}
+                        </p>
+                      </div>
+
+                      {/* Remaining Amount */}
+                      <div className="bg-gray-800/50 p-3 rounded-lg">
+                        <p className="text-sm text-gray-400 mb-1">Remaining</p>
+                        <p className={`text-lg font-semibold ${
+                          budget.remaining > 0 ? 'text-emerald-400' : 'text-rose-400'
+                        }`}>
+                          {formatCurrency(budget.remaining)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar - Full width on mobile */}
+                    <div className="mt-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-semibold">{budget.category}</h3>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => setEditingBudget(budget)}
-                            className="p-2 text-blue-500 hover:text-blue-400 transition-colors"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to delete this budget?')) {
-                                handleDeleteBudget(budget.category);
-                              }
-                            }}
-                            className="p-2 text-red-500 hover:text-red-400 transition-colors"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
+                        <span className="text-sm text-gray-400">Progress</span>
+                        <span className="text-sm text-gray-400">
+                          {budget.progress.toFixed(1)}%
+                        </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 mb-4">
-                        <div className="bg-gray-900 p-3 rounded-lg">
-                          <p className="text-sm text-gray-400">Budget</p>
-                          <p className="text-2xl font-bold text-indigo-400">
-                            {formatCurrency(budget.amount)}
-                          </p>
-                        </div>
-                        <div className="bg-gray-900 p-3 rounded-lg">
-                          <p className="text-sm text-gray-400">Spent</p>
-                          <p className="text-lg font-medium text-rose-400">
-                            {formatCurrency(budget.spent)}
-                          </p>
-                        </div>
-                        <div className="bg-gray-900 p-3 rounded-lg">
-                          <p className="text-sm text-gray-400">Remaining</p>
-                          <p className={`text-lg font-semibold ${
-                            budget.remaining > 0 ? 'text-emerald-400' : 'text-rose-400'
-                          }`}>
-                            {formatCurrency(budget.remaining)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <ProgressRing progress={budget.progress} />
-                        <div className="flex-1">
-                          <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full transition-all duration-500 ${
-                                budget.progress > 100 ? 'bg-red-500' : 'bg-green-500'
-                              }`}
-                              style={{ width: `${Math.min(budget.progress, 100)}%` }}
-                            />
-                          </div>
-                        </div>
+                      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-500 ${
+                            budget.progress > 100 ? 'bg-rose-500' : 'bg-emerald-500'
+                          }`}
+                          style={{ width: `${Math.min(budget.progress, 100)}%` }}
+                        />
                       </div>
                     </div>
                   </div>
