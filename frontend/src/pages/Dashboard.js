@@ -2,7 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { getCurrentUser } from '@aws-amplify/auth';
 import axios from 'axios';
 import config from '../utils/config';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
+import { formatCurrency, fetchUserPreferences } from '../utils/formatters';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const API_ENDPOINT = config.dashboardEndpoint;
 const axiosConfig = {

@@ -5,12 +5,36 @@ import axios from 'axios';
 import config from '../utils/config';
 
 const API_ENDPOINT = `${config.apiEndpoint.replace('/transactions', '')}/profile`;
+const USER_POOL_ID = 'ap-south-1_IslMhK8Md'; // Your Cognito User Pool ID
+
 const axiosConfig = {
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: false
 };
+
+// Add profile avatar component
+const ProfileAvatar = ({ name }) => {
+  const initials = name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <div className="flex justify-center mb-6">
+      <div className="relative group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur opacity-30 group-hover:opacity-100 transition duration-500"></div>
+        <div className="relative w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-700 group-hover:border-indigo-500 transition-colors">
+          <span className="text-2xl font-bold text-gray-200">{initials}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Profile = () => {
   const [email, setEmail] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -22,6 +46,8 @@ const Profile = () => {
     email: '',
     currency: 'USD'
   });
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   // Fetch user profile data
   const fetchUserProfile = async () => {
@@ -158,6 +184,39 @@ const Profile = () => {
     }
   };
 
+  const handleSubscribe = async () => {
+    try {
+      setSubscriptionLoading(true);
+      const user = await getCurrentUser();
+      const attributes = await fetchUserAttributes();
+      const email = attributes.email;
+
+      if (email) {
+        const response = await axios.post(
+          `${config.apiEndpoint.replace('/transactions', '')}/subscribe`,
+          { email },
+          {
+            ...axiosConfig,
+            headers: {
+              ...axiosConfig.headers,
+              'Authorization': user.userId
+            }
+          }
+        );
+
+        if (response.data.statusCode === 200) {
+          setIsSubscribed(true);
+          setError('');
+        }
+      }
+    } catch (error) {
+      setError('Failed to subscribe to notifications');
+      console.error('Subscription error:', error);
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
+
   // Create Profile Modal
   const CreateProfileModal = () => (
     <div className="fixed inset-0 bg-black flex items-center justify-center z-50 px-4">
@@ -238,92 +297,142 @@ const Profile = () => {
   }
 
   return (
-    <div className="flex flex-col items-center py-8 px-4 sm:px-6 md:px-12 pb-24 md:pb-8 bg-black min-h-[calc(100vh-80px)] text-white">
-      {error && (
-        <div className="bg-red-500 text-white p-4 rounded-lg mb-6 w-full max-w-lg">
-          {error}
+    <div className="bg-black text-white min-h-screen p-6 font-sans mb-16 lg:mb-0">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Profile Header */}
+        <div className="flex flex-col items-center lg:flex-row lg:justify-between lg:items-center mb-8">
+          <h1 className="text-3xl text-center font-bold text-gray-100 mb-4 lg:mb-0">Profile</h1>
         </div>
-      )}
 
-      {/* Profile Header */}
-      <div className="relative bg-gray-800 shadow-2xl rounded-3xl p-6 sm:p-8 md:p-10 max-w-lg w-full text-center transition-transform duration-300 hover:scale-105">
-        <div className="flex justify-center mb-4 sm:mb-6">
-          <UserCircleIcon className="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 text-indigo-500" />
-        </div>
-        <h2 className="text-2xl sm:text-3xl font-semibold mb-1 sm:mb-2">{profileData.name}</h2>
-        <p className="text-gray-300 text-sm sm:text-base">{email}</p>
-      </div>
+        {/* Profile Avatar */}
+        <ProfileAvatar name={profileData.name || 'User'} />
 
-      {/* Personal Information Section */}
-      <div className="bg-gray-800 shadow-2xl rounded-3xl p-6 sm:p-8 mt-6 sm:mt-8 max-w-lg w-full">
-        <h3 className="text-xl sm:text-2xl font-semibold mb-4 text-indigo-400">Personal Information</h3>
-        <div className="space-y-5">
-          <div className="flex items-center space-x-4">
-            <UserCircleIcon className="w-5 sm:w-6 h-5 sm:h-6 text-indigo-500" />
-            <input
-              type="text"
-              value={profileData.name}
-              onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-              className="flex-grow p-2 sm:p-3 border border-gray-700 rounded-md bg-gray-700 text-white focus:border-indigo-500 transition-all"
-              readOnly={!isEditing}
-            />
-          </div>
-          <div className="flex items-center space-x-4">
-            <EnvelopeIcon className="w-5 sm:w-6 h-5 sm:h-6 text-indigo-500" />
-            <input
-              type="email"
-              value={email}
-              className="flex-grow p-2 sm:p-3 border border-gray-700 rounded-md bg-gray-700 text-white"
-              readOnly
-            />
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-xl">💰</span>
-            <select
-              value={profileData.currency}
-              onChange={(e) => setProfileData({ ...profileData, currency: e.target.value })}
-              className="flex-grow p-2 sm:p-3 border border-gray-700 rounded-md bg-gray-700 text-white focus:border-indigo-500 transition-all"
-              disabled={!isEditing}
-            >
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="GBP">GBP (£)</option>
-              <option value="INR">INR (₹)</option>
-            </select>
+        {/* Profile Info Section */}
+        <div className="bg-gray-900/70 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 shadow-xl">
+          <div className="flex flex-col space-y-6">
+            {/* Name Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
+              <input
+                type="text"
+                value={profileData.name}
+                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                disabled={!isEditing}
+                className="w-full p-3 bg-gray-800/70 border border-gray-600/50 rounded-lg text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all disabled:opacity-50"
+              />
+            </div>
+
+            {/* Email Display */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+              <div className="flex items-center p-3 bg-gray-800/70 border border-gray-600/50 rounded-lg">
+                <EnvelopeIcon className="w-5 h-5 text-gray-400 mr-2" />
+                <span className="text-gray-200">{email}</span>
+              </div>
+            </div>
+
+            {/* Currency Selector */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Preferred Currency</label>
+              <select
+                value={profileData.currency}
+                onChange={(e) => setProfileData({ ...profileData, currency: e.target.value })}
+                disabled={!isEditing}
+                className="w-full p-3 bg-gray-800/70 border border-gray-600/50 rounded-lg text-gray-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all disabled:opacity-50"
+              >
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="INR">INR (₹)</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Account Actions Section */}
-      <div className="bg-gray-800 shadow-2xl rounded-3xl p-6 sm:p-8 mt-6 sm:mt-8 max-w-lg w-full">
-        <h3 className="text-xl sm:text-2xl font-semibold mb-4 text-indigo-400">Account Actions</h3>
-        <div className="space-y-4">
-          <button
-            onClick={handleUpdateProfile}
-            className="w-full bg-indigo-500 text-white py-3 rounded-lg font-semibold hover:bg-indigo-600 transition-transform duration-200 transform hover:scale-105 flex items-center justify-center"
-          >
-            <PencilIcon className="w-5 h-5 mr-2" />
-            {isEditing ? 'Save Changes' : 'Edit Profile'}
-          </button>
-          {isEditing && (
+        {/* Notification Preferences */}
+        <div className="bg-gray-900/70 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 shadow-xl">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <h2 className="text-lg font-medium text-gray-200">Notification Preferences</h2>
+                <span className="px-2 py-1 text-xs font-medium bg-indigo-500/10 text-indigo-400 rounded-full">Beta</span>
+              </div>
+              <p className="text-sm text-gray-400">Get notified when your spending exceeds budget limits</p>
+            </div>
+
             <button
-              onClick={() => {
-                setIsEditing(false);
-                fetchUserProfile();
-              }}
-              className="w-full bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition-transform duration-200 transform hover:scale-105"
+              onClick={handleSubscribe}
+              disabled={isSubscribed || subscriptionLoading}
+              className={`
+                relative px-6 py-2.5 rounded-lg font-medium transition-all duration-200
+                flex items-center justify-center
+                ${isSubscribed 
+                  ? 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
+                  : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20'
+                }
+                disabled:opacity-50 disabled:cursor-not-allowed
+              `}
             >
-              Cancel
+              {subscriptionLoading ? (
+                <>
+                  <div className="absolute inset-0 bg-indigo-500/5 rounded-lg animate-pulse"></div>
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
+                  <span>Processing...</span>
+                </>
+              ) : isSubscribed ? (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Subscribed</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <span>Enable Alerts</span>
+                </>
+              )}
             </button>
+          </div>
+
+          {/* Status Messages */}
+          {isSubscribed && (
+            <div className="mt-4 p-3 bg-gray-800/50 border border-gray-700/50 rounded-lg">
+              <p className="text-sm text-gray-300">
+                You'll receive email notifications when your spending exceeds budget limits.
+              </p>
+            </div>
           )}
-          <button
-            onClick={handleLogout}
-            className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-transform duration-200 transform hover:scale-105 flex items-center justify-center"
-          >
-            <ArrowRightOnRectangleIcon className="w-5 h-5 mr-2" />
-            Log Out
-          </button>
         </div>
+
+        {/* Account Actions - removed margin from here since it's on parent */}
+        <div className="bg-gray-900/70 backdrop-blur-sm rounded-lg p-6 border border-gray-700/50 shadow-xl">
+          <h3 className="text-lg font-medium text-gray-100 mb-4">Account Actions</h3>
+          <div className="space-y-4">
+            <button
+              onClick={handleUpdateProfile}
+              className="w-full p-3 bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 rounded-lg font-medium hover:bg-indigo-600/30 transition-all duration-200"
+            >
+              {isEditing ? 'Save Changes' : 'Edit Profile'}
+            </button>
+            
+            <button
+              onClick={handleLogout}
+              className="w-full p-3 bg-rose-600/20 text-rose-300 border border-rose-500/30 rounded-lg font-medium hover:bg-rose-600/30 transition-all duration-200"
+            >
+              Log Out
+            </button>
+          </div>
+        </div>
+
+        {/* Error Message - with updated colors */}
+        {error && (
+          <div className="p-3 bg-rose-600/20 border border-rose-500/30 rounded-lg">
+            <p className="text-sm text-rose-300">{error}</p>
+          </div>
+        )}
       </div>
     </div>
   );

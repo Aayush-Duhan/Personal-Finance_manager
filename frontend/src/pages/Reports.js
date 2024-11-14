@@ -72,7 +72,6 @@ const Reports = () => {
       setError('');
       const user = await getCurrentUser();
       
-      console.log('Generating report with params:', { type, period, params });
 
       const requestData = type === 'custom' 
         ? {
@@ -85,7 +84,6 @@ const Reports = () => {
             period: period
           };
 
-      console.log('Request data:', requestData);
 
       const response = await axios.post(
         API_ENDPOINT,
@@ -99,7 +97,6 @@ const Reports = () => {
         }
       );
 
-      console.log('Response:', response.data);
 
       if (response.data.statusCode === 200 || response.data.statusCode === 201) {
         const reportData = typeof response.data.body === 'string' 
@@ -121,7 +118,6 @@ const Reports = () => {
     try {
       const user = await getCurrentUser();
       
-      console.log('Deleting report:', reportId);
       
       const response = await axios.delete(`${API_ENDPOINT}/${reportId}`, {
         ...axiosConfig,
@@ -131,7 +127,6 @@ const Reports = () => {
         }
       });
 
-      console.log('Delete response:', response.data);
 
       if (response.data.statusCode === 200) {
         // Remove the report from local state
@@ -141,8 +136,7 @@ const Reports = () => {
         if (selectedReport?.id === reportId) {
           setSelectedReport(null);
         }
-        
-        console.log('Report deleted successfully');
+
       } else {
         throw new Error('Failed to delete report');
       }
@@ -175,16 +169,13 @@ const Reports = () => {
 
   const handleReportSelect = async (report) => {
     try {
-      console.log('Selected report:', report);
       
       if (!report) {
-        console.log('No report selected');
         return;
       }
 
       // Get user ID
       const user = await getCurrentUser();
-      console.log('User ID:', user.userId);
 
       // Fetch report data
       const response = await axios.get(`${API_ENDPOINT}/${report.id}`, {
@@ -195,14 +186,12 @@ const Reports = () => {
         }
       });
 
-      console.log('Report response:', response.data);
 
       if (response.data.statusCode === 200) {
         const reportData = typeof response.data.body === 'string' 
           ? JSON.parse(response.data.body) 
           : response.data.body;
         
-        console.log('Parsed report data:', reportData);
         setSelectedReport(reportData);
       } else {
         throw new Error('Failed to fetch report');
