@@ -1,11 +1,32 @@
+// Required environment variables check
+const requiredEnvVars = [
+  'REACT_APP_AWS_PROJECT_REGION',
+  'REACT_APP_AWS_COGNITO_IDENTITY_POOL_ID',
+  'REACT_APP_AWS_COGNITO_REGION',
+  'REACT_APP_AWS_USER_POOLS_ID',
+  'REACT_APP_AWS_USER_POOLS_WEB_CLIENT_ID',
+  'REACT_APP_AWS_OAUTH_DOMAIN',
+  'REACT_APP_REDIRECT_SIGN_IN',
+  'REACT_APP_REDIRECT_SIGN_OUT'
+];
+
+// Use environment variables
+const getConfigValue = (key) => {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+};
+
 const awsmobile = {
-    "aws_project_region": "ap-south-1",
-    "aws_cognito_identity_pool_id": "ap-south-1:17fdad12-094d-4c0e-a258-cc400fef88fb",
-    "aws_cognito_region": "ap-south-1",
-    "aws_user_pools_id": "ap-south-1_IslMhK8Md",
-    "aws_user_pools_web_client_id": "2smojmi9d48ji4n6eak53mf7td",
+    "aws_project_region": getConfigValue('REACT_APP_AWS_PROJECT_REGION'),
+    "aws_cognito_identity_pool_id": getConfigValue('REACT_APP_AWS_COGNITO_IDENTITY_POOL_ID'),
+    "aws_cognito_region": getConfigValue('REACT_APP_AWS_COGNITO_REGION'),
+    "aws_user_pools_id": getConfigValue('REACT_APP_AWS_USER_POOLS_ID'),
+    "aws_user_pools_web_client_id": getConfigValue('REACT_APP_AWS_USER_POOLS_WEB_CLIENT_ID'),
     "oauth": {
-        "domain": "financemanager76a892e1-76a892e1-dev.auth.ap-south-1.amazoncognito.com",
+        "domain": getConfigValue('REACT_APP_AWS_OAUTH_DOMAIN'),
         "scope": [
             "phone",
             "email",
@@ -13,8 +34,8 @@ const awsmobile = {
             "profile",
             "aws.cognito.signin.user.admin"
         ],
-        "redirectSignIn": "http://localhost:3000/,https://main.d3lqh73emmjp9j.amplifyapp.com/,https://financemanager76a892e1-76a892e1-dev.auth.ap-south-1.amazoncognito.com/oauth2/idpresponse",
-        "redirectSignOut": "http://localhost:3000/,https://main.d3lqh73emmjp9j.amplifyapp.com/",
+        "redirectSignIn": getConfigValue('REACT_APP_REDIRECT_SIGN_IN'),
+        "redirectSignOut": getConfigValue('REACT_APP_REDIRECT_SIGN_OUT'),
         "responseType": "code"
     },
     "federationTarget": "COGNITO_USER_AND_IDENTITY_POOLS",
